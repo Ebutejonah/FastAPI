@@ -22,3 +22,5 @@ class Blog(Base):
     body = Column(String)
     created_on = Column(DateTime)
     author = relationship("User", back_populates = "blogs")
+
+    
