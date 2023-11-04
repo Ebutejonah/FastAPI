@@ -38,30 +38,32 @@ def view_blog(id, db : Session = Depends(get_db), get_current_user:schemas.User 
 
 
 @router.put("/{title}", status_code=status.HTTP_202_ACCEPTED)
-
-#The update function works as expected. A blog can not be updated by a user that was not the author, but I keep geting the successful updated message
-
 def update_blog(title, request:schemas.UpdateBlog, db : Session = Depends(get_db), current_user:models.User= Depends(get_current_user), get_current_user:schemas.User = Depends(get_current_user)):
-    try:
-        blog = db.query(models.Blog).filter(models.Blog.title == title, models.Blog.user_id == current_user.id)
-        blog.update({"title":request.title, "body":request.body})
-        db.commit()
-        return {"Message":f"You have successfull updated the blog"}
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "You are not authorized to edit this blog.")
-    
+    blog_exist = db.query(models.Blog).filter(models.Blog.title == title).first()
+    if blog_exist:
+        try:
+            blog = db.query(models.Blog).filter(models.Blog.title == title, models.Blog.user_id == current_user.id).one()
+            blog.title = request.title
+            blog.body = request.body
+            db.commit()
+            return {"Message":f"You have successfully updated the blog."}
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "You are not authorized to edit this blog.")
+    raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = "No Blog with title exists!")
     
 
 @router.delete("/{title}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_blog(title, db: Session = Depends(get_db), current_user:models.User= Depends(get_current_user), get_current_user:schemas.User = Depends(get_current_user)):
-    try:
-        blog = db.query(models.Blog).filter(models.Blog.title == title, models.Blog.user_id == current_user.id)
-        blog.delete(synchronize_session=False)
-        db.commit()
-        return{"Message":"Blog successfully deleted!"}
-    except NoResultFound:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "You are not authorized to delete this blog.")
-    
+    blog_exist = db.query(models.Blog).filter(models.Blog.title == title).first()
+    if blog_exist:
+        try:
+            blog = db.query(models.Blog).filter(models.Blog.title == title, models.Blog.user_id == current_user.id)
+            blog.delete(synchronize_session=False)
+            db.commit()
+            return{"Message":"Blog successfully deleted!"}
+        except NoResultFound:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail = "You are not authorized to delete this blog.")
+    raise HTTPException(status_code = status.HTTP_404_NOT_FOUND, detail = "No Blog with title exists!")
         
     
     
